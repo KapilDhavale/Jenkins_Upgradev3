@@ -1,52 +1,57 @@
 pipeline {
     agent any
 
+    tools {
+        maven 'Maven_3.9.6' // ✅ Name must match the one in "Global Tool Configuration"
+    }
+    
     parameters {
         booleanParam(name: 'RELEASE', defaultValue: false, description: 'Is this a Release Candidate?')
     }
 
-    tools {
-        maven 'Maven_3.9.6'  // if you’re using the Global Tool Config for Maven
-    }
-
     environment {
         RELEASE_VERSION = '1.1.0'
-        INT_VERSION     = 'R2'
-        // Compute VERSION_SUFFIX via Groovy string interpolation:
-        VERSION_SUFFIX  = "${params.RELEASE ? \"${env.RELEASE_VERSION}:${env.BUILD_NUMBER}\" : \"${env.INT_VERSION}ci:${env.BUILD_NUMBER}\"}"
+        INT_VERSION = 'R2'
     }
 
     stages {
         stage('Audit tools') {
             steps {
-                bat """
+                bat '''
                     git --version
                     java -version
-                    mvn --version
-                """
+                    mvn -version
+                '''
             }
         }
 
         stage('Unit Test') {
             steps {
-                dir('java-tomcat-sample') {
-                    bat """
+                dir('./java-tomcat-sample') {
+                    bat '''
                         echo Executing Unit Tests...
                         mvn test
-                    """
+                    '''
                 }
             }
         }
 
         stage('Build') {
             steps {
-                echo "Building version suffix: ${VERSION_SUFFIX}"
-                dir('java-tomcat-sample') {
-                    bat """
-                        mvn versions:set -DnewVersion=${VERSION_SUFFIX}-SNAPSHOT
-                        mvn versions:update-child-modules
-                        mvn clean package
-                    """
+                script {
+                    def versionSuffix = params.RELEASE ?
+                        "${env.RELEASE_VERSION}:${env.BUILD_NUMBER}" :
+                        "${env.INT_VERSION}ci:${env.BUILD_NUMBER}"
+
+                    echo "Building version: ${versionSuffix}"
+
+                    dir('./java-tomcat-sample') {
+                        bat """
+                            mvn versions:set -DnewVersion=${versionSuffix}-SNAPSHOT
+                            mvn versions:update-child-modules
+                            mvn clean package
+                        """
+                    }
                 }
             }
         }
@@ -56,8 +61,6 @@ pipeline {
                 expression { return params.RELEASE }
             }
             steps {
-                echo 'Publishing WAR artifact...'
-                // archives all WARs in the workspace
                 archiveArtifacts artifacts: '**/*.war', fingerprint: true
             }
         }
