@@ -57,18 +57,18 @@ pipeline {
         }
 
         stage('Publish') {
-            when {
-                expression { return params.RELEASE }
-            }
+            // when {
+            //     expression { return params.RELEASE }
+            // }
             steps {
                 archiveArtifacts artifacts: '**/*.war', fingerprint: true
             }
         }
     }
 
-    post {
-        always {
-            cleanWs()
-        }
-    }
+    // post {
+    //     always {
+    //         cleanWs()
+    //     }
+    // }
 }
