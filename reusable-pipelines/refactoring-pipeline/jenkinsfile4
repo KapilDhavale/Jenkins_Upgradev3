@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     tools {
-        maven 'Maven_3.9.6'
+        maven 'Maven_3.9.6' // Ensure this is configured in Jenkins tools
     }
 
     parameters {
@@ -41,7 +41,11 @@ pipeline {
                     echo "Building version: ${params.RELEASE ? RELEASE_VERSION : INT_VERSION} with suffix: ${versionSuffix}"
 
                     dir('java-tomcat-sample') {
-                        packageApplication(versionSuffix)
+                        // Separate bat commands for each build step
+                        bat "echo Setting version to ${versionSuffix}-SNAPSHOT"
+                        bat "mvn versions:set -DnewVersion=${versionSuffix}-SNAPSHOT"
+                        bat "mvn versions:update-child-modules"
+                        bat "mvn clean package"
                     }
                 }
             }
@@ -52,12 +56,11 @@ pipeline {
                 script {
                     bat 'dir java-tomcat-sample\\target'
 
-                    // Check if any .war file exists before trying to archive
                     def warExists = fileExists('java-tomcat-sample/target/*.war')
                     if (warExists) {
                         archiveArtifacts artifacts: 'java-tomcat-sample/target/*.war', fingerprint: true
                     } else {
-                        echo "No WAR file found to archive."
+                        echo "⚠️ WAR file not found. Skipping artifact archiving."
                     }
                 }
             }
@@ -71,8 +74,6 @@ pipeline {
     }
 }
 
-// === Helper Functions ===
-
 def getBuildVersion() {
     return params.RELEASE 
         ? "${env.RELEASE_VERSION}-${env.BUILD_NUMBER}" 
@@ -85,13 +86,4 @@ def auditTools() {
         java -version
         mvn --version
     '''
-}
-
-def packageApplication(versionSuffix) {
-    bat """
-        echo Setting version to ${versionSuffix}-SNAPSHOT
-        mvn versions:set -DnewVersion=${versionSuffix}-SNAPSHOT
-        mvn versions:update-child-modules
-        mvn clean package
-    """
 }
