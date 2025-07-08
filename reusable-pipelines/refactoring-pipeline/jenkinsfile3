@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     tools {
-        maven 'Maven_3.9.6' // ✅ Name must match the one in "Global Tool Configuration"
+        maven 'Maven_3.9.6'   // Must match your Global Tool Configuration
     }
     
     parameters {
@@ -11,25 +11,26 @@ pipeline {
 
     environment {
         RELEASE_VERSION = '1.1.0'
-        INT_VERSION = 'R2'
+        INT_VERSION     = 'R2'
     }
 
     stages {
         stage('Audit tools') {
             steps {
                 bat '''
+                    echo ==== Tool Versions ====
                     git --version
                     java -version
-                    mvn -version
+                    mvn --version
                 '''
             }
         }
 
         stage('Unit Test') {
             steps {
-                dir('./java-tomcat-sample') {
+                dir('java-tomcat-sample') {
                     bat '''
-                        echo Executing Unit Tests...
+                        echo ==== Running Unit Tests ====
                         mvn test
                     '''
                 }
@@ -39,13 +40,14 @@ pipeline {
         stage('Build') {
             steps {
                 script {
+                    // Compute suffix: INT_VERSIONci:BUILD_NUMBER if RELEASE is false
                     def versionSuffix = params.RELEASE ?
                         "${env.RELEASE_VERSION}:${env.BUILD_NUMBER}" :
                         "${env.INT_VERSION}ci:${env.BUILD_NUMBER}"
 
                     echo "Building version: ${versionSuffix}"
 
-                    dir('./java-tomcat-sample') {
+                    dir('java-tomcat-sample') {
                         bat """
                             mvn versions:set -DnewVersion=${versionSuffix}-SNAPSHOT
                             mvn versions:update-child-modules
@@ -61,7 +63,8 @@ pipeline {
                 expression { return params.RELEASE }
             }
             steps {
-                archiveArtifacts artifacts: '**/*.war', fingerprint: true
+                // Adjusted to point to the target folder where Maven outputs the WAR
+                archiveArtifacts artifacts: 'java-tomcat-sample/target/*.war', fingerprint: true
             }
         }
     }
