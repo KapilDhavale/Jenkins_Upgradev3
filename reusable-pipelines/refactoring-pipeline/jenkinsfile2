@@ -1,16 +1,21 @@
 pipeline {
     agent any
+
+    tools {
+        maven 'Maven_3.9.6' // ✅ Name must match the one in "Global Tool Configuration"
+    }
     environment {
         VERSION = '2.1.0'
         RELEASE_VERSION = 'R.2'
     }
+
     stages {
         stage('Audit tools') {
             steps {
-                sh '''
-                  git version
-                  java -version
-                  mvn -version
+                bat '''
+                    git --version
+                    java -version
+                    mvn -version
                 '''
             }
         }
@@ -18,8 +23,8 @@ pipeline {
         stage('Unit Test') {
             steps {
                 dir('./java-tomcat-sample') {
-                    sh '''
-                        echo "Executing Unit Tests..."
+                    bat '''
+                        echo Executing Unit Tests...
                         mvn test
                     '''
                 }
@@ -31,12 +36,12 @@ pipeline {
                 echo "Building version: ${VERSION} with suffix: ${RELEASE_VERSION}"
                 echo 'Mention your Application Build Code here!!!'
                 dir('./java-tomcat-sample') {
-                        sh '''
-                            mvn versions:set -DnewVersion="${VERSION}"-SNAPSHOT
-                            mvn versions:update-child-modules
-                            mvn clean package
-                        '''
-                    }
+                    bat """
+                        mvn versions:set -DnewVersion=${VERSION}-SNAPSHOT
+                        mvn versions:update-child-modules
+                        mvn clean package
+                    """
+                }
             }
         }
     }
