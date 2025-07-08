@@ -1,8 +1,12 @@
 library identifier: 'Jenkins_Pipeline_Shared_Libs@main',
-        retriever: modernSCM([$class: 'GitSCMSource', remote: 'https://github.com/anshulc55/Jenkins_Pipeline_Shared_Libs.git'])
+        retriever: modernSCM([$class: 'GitSCMSource', remote: 'https://github.com/KapilDhavale/Jenkins_Pipeline_Shared_Libs.git'])
 
 pipeline {
     agent any
+
+     tools {
+        maven 'Maven_3.9.6' // ✅ Name must match the one in "Global Tool Configuration"
+    }
     stages {
         stage('Audit tools') {
             steps {
