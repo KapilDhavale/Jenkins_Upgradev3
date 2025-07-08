@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     tools {
-        maven 'Maven_3.9.6' // Ensure this is configured in Jenkins tools
+        maven 'Maven_3.9.6'
     }
 
     parameters {
@@ -25,11 +25,8 @@ pipeline {
 
         stage('Unit Test') {
             steps {
-                dir('java-tomcat-sample') {
-                    bat '''
-                        echo ==== Executing Unit Tests ====
-                        mvn test
-                    '''
+                script {
+                    runUnitTests()
                 }
             }
         }
@@ -38,15 +35,8 @@ pipeline {
             steps {
                 script {
                     def versionSuffix = getBuildVersion()
-                    echo "Building version: ${params.RELEASE ? RELEASE_VERSION : INT_VERSION} with suffix: ${versionSuffix}"
-
-                    dir('java-tomcat-sample') {
-                        // Separate bat commands for each build step
-                        bat "echo Setting version to ${versionSuffix}-SNAPSHOT"
-                        bat "mvn versions:set -DnewVersion=${versionSuffix}-SNAPSHOT"
-                        bat "mvn versions:update-child-modules"
-                        bat "mvn clean package"
-                    }
+                    echo "📦 Building version: ${versionSuffix}"
+                    buildApplication(versionSuffix)
                 }
             }
         }
@@ -54,14 +44,7 @@ pipeline {
         stage('Publish') {
             steps {
                 script {
-                    bat 'dir java-tomcat-sample\\target'
-
-                    def warExists = fileExists('java-tomcat-sample/target/*.war')
-                    if (warExists) {
-                        archiveArtifacts artifacts: 'java-tomcat-sample/target/*.war', fingerprint: true
-                    } else {
-                        echo "⚠️ WAR file not found. Skipping artifact archiving."
-                    }
+                    publishArtifacts()
                 }
             }
         }
@@ -74,16 +57,38 @@ pipeline {
     }
 }
 
-def getBuildVersion() {
-    return params.RELEASE 
-        ? "${env.RELEASE_VERSION}-${env.BUILD_NUMBER}" 
-        : "${env.INT_VERSION}ci-${env.BUILD_NUMBER}"
-}
-
 def auditTools() {
     bat '''
         git --version
         java -version
         mvn --version
     '''
+}
+
+def runUnitTests() {
+    dir('java-tomcat-sample') {
+        bat '''
+            echo ==== Running Unit Tests ====
+            mvn test
+        '''
+    }
+}
+
+def getBuildVersion() {
+    return params.RELEASE ?
+        "${env.RELEASE_VERSION}-${env.BUILD_NUMBER}" :
+        "${env.INT_VERSION}ci-${env.BUILD_NUMBER}"
+}
+
+def buildApplication(versionSuffix) {
+    dir('java-tomcat-sample') {
+        bat "mvn versions:set -DnewVersion=${versionSuffix}-SNAPSHOT"
+        bat "mvn versions:update-child-modules"
+        bat "mvn clean package"
+    }
+}
+
+def publishArtifacts() {
+    bat 'dir java-tomcat-sample\\target'
+    archiveArtifacts artifacts: 'java-tomcat-sample/target/*.war', fingerprint: true
 }
