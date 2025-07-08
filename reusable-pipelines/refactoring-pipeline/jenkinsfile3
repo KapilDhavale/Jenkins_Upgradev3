@@ -55,9 +55,9 @@ pipeline {
         }
 
         stage('Publish') {
-            when {
-                expression { params.RELEASE }
-            }
+            // when {
+            //     expression { params.RELEASE }
+            // }
             steps {
                 // Optional: List files in the target directory to debug
                 bat 'dir java-tomcat-sample\\target'
@@ -68,9 +68,9 @@ pipeline {
         }
     }
 
-    post {
-        always {
-            cleanWs()
-        }
-    }
+    // post {
+    //     always {
+    //         cleanWs()
+    //     }
+    // }
 }
