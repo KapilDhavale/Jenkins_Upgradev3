@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    tools {
+        maven 'Maven_3.9.6' // Make sure this name matches in Jenkins tool config
+    }
+
     parameters {
         booleanParam(name: 'RELEASE', defaultValue: false, description: 'Is this a Release Candidate?')
     }
