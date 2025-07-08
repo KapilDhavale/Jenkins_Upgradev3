@@ -46,11 +46,17 @@ pipeline {
                     echo "Building version: ${versionSuffix}"
 
                     dir('java-tomcat-sample') {
+                        // Option A: chain with &&
                         bat """
-                            mvn versions:set -DnewVersion=${versionSuffix}-SNAPSHOT
-                            mvn versions:update-child-modules
+                            mvn versions:set -DnewVersion=${versionSuffix}-SNAPSHOT && ^
+                            mvn versions:update-child-modules && ^
                             mvn clean package
                         """
+                        
+                        // — OR — Option B: separate steps
+                        // bat "mvn versions:set -DnewVersion=${versionSuffix}-SNAPSHOT"
+                        // bat "mvn versions:update-child-modules"
+                        // bat "mvn clean package"
                     }
                 }
             }
@@ -59,11 +65,11 @@ pipeline {
         stage('Publish') {
             when { expression { params.RELEASE } }
             steps {
-                // 1) Debug listing
+                // List out the target folder so you can verify
                 bat 'dir java-tomcat-sample\\target'
 
-                // 2) Archive whatever got produced (war or jar)
-                archiveArtifacts artifacts: 'java-tomcat-sample/target/*.{war,jar}', fingerprint: true
+                // Now archive the WAR (or JAR) you just built
+                archiveArtifacts artifacts: 'java-tomcat-sample/target/*.war', fingerprint: true
             }
         }
     }
