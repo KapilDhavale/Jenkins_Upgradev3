@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     tools {
-        maven 'Maven_3.9.6' // Make sure this name matches in Jenkins tool config
+        maven 'Maven_3.9.6' // Ensure this is configured in Jenkins tools
     }
 
     parameters {
@@ -11,7 +11,7 @@ pipeline {
 
     environment {
         RELEASE_VERSION = '1.1.0'
-        INT_VERSION = 'R2'
+        INT_VERSION     = 'R2'
     }
 
     stages {
@@ -48,10 +48,11 @@ pipeline {
         }
 
         stage('Publish') {
-            // Uncomment this block if you only want to publish during release
+            // Enable this block if you only want to publish when RELEASE is true
             // when {
             //     expression { return params.RELEASE }
             // }
+
             steps {
                 bat 'dir java-tomcat-sample\\target'
                 archiveArtifacts artifacts: 'java-tomcat-sample/target/*.war', fingerprint: true
@@ -67,7 +68,10 @@ pipeline {
 }
 
 def getBuildVersion() {
-    return params.RELEASE ? "${env.RELEASE_VERSION}:${env.BUILD_NUMBER}" : "${env.INT_VERSION}ci:${env.BUILD_NUMBER}"
+    // Avoid illegal characters like ':' for Windows file paths and Maven versions
+    return params.RELEASE 
+        ? "${env.RELEASE_VERSION}-${env.BUILD_NUMBER}" 
+        : "${env.INT_VERSION}ci-${env.BUILD_NUMBER}"
 }
 
 def auditTools() {
