@@ -36,6 +36,7 @@ pipeline {
             steps {
                 echo "Building version: ${VERSION} with suffix: ${RELEASE_VERSION}"
                 dir('java-tomcat-sample') {
+                    // Run version set, update-child-modules, AND clean+package in one batch
                     bat """
                         mvn versions:set -DnewVersion=${VERSION}-SNAPSHOT
                         mvn versions:update-child-modules
