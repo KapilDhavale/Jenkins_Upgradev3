@@ -1,5 +1,9 @@
 pipeline {
     agent any
+
+    tools {
+        maven 'Maven_3.9.6' // ✅ Name must match the one in "Global Tool Configuration"
+    }
     
     environment {
         VERSION = '0.1.0'
