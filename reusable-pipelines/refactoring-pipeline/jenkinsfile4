@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     tools {
-        maven 'Maven_3.9.6' // Ensure this is configured in Jenkins tools
+        maven 'Maven_3.9.6'
     }
 
     parameters {
@@ -39,7 +39,7 @@ pipeline {
                 script {
                     def versionSuffix = getBuildVersion()
                     echo "Building version: ${params.RELEASE ? RELEASE_VERSION : INT_VERSION} with suffix: ${versionSuffix}"
-                    
+
                     dir('java-tomcat-sample') {
                         packageApplication(versionSuffix)
                     }
@@ -48,14 +48,18 @@ pipeline {
         }
 
         stage('Publish') {
-            // Enable this block if you only want to publish when RELEASE is true
-            // when {
-            //     expression { return params.RELEASE }
-            // }
-
             steps {
-                bat 'dir java-tomcat-sample\\target'
-                archiveArtifacts artifacts: 'java-tomcat-sample/target/*.war', fingerprint: true
+                script {
+                    bat 'dir java-tomcat-sample\\target'
+
+                    // Check if any .war file exists before trying to archive
+                    def warExists = fileExists('java-tomcat-sample/target/*.war')
+                    if (warExists) {
+                        archiveArtifacts artifacts: 'java-tomcat-sample/target/*.war', fingerprint: true
+                    } else {
+                        echo "No WAR file found to archive."
+                    }
+                }
             }
         }
     }
@@ -67,8 +71,9 @@ pipeline {
     }
 }
 
+// === Helper Functions ===
+
 def getBuildVersion() {
-    // Avoid illegal characters like ':' for Windows file paths and Maven versions
     return params.RELEASE 
         ? "${env.RELEASE_VERSION}-${env.BUILD_NUMBER}" 
         : "${env.INT_VERSION}ci-${env.BUILD_NUMBER}"
@@ -84,6 +89,7 @@ def auditTools() {
 
 def packageApplication(versionSuffix) {
     bat """
+        echo Setting version to ${versionSuffix}-SNAPSHOT
         mvn versions:set -DnewVersion=${versionSuffix}-SNAPSHOT
         mvn versions:update-child-modules
         mvn clean package
