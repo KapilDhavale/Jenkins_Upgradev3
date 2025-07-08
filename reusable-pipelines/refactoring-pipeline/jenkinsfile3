@@ -46,17 +46,9 @@ pipeline {
                     echo "Building version: ${versionSuffix}"
 
                     dir('java-tomcat-sample') {
-                        // Option A: chain with &&
-                        bat """
-                            mvn versions:set -DnewVersion=${versionSuffix}-SNAPSHOT && ^
-                            mvn versions:update-child-modules && ^
-                            mvn clean package
-                        """
-                        
-                        // — OR — Option B: separate steps
-                        // bat "mvn versions:set -DnewVersion=${versionSuffix}-SNAPSHOT"
-                        // bat "mvn versions:update-child-modules"
-                        // bat "mvn clean package"
+                        bat "mvn versions:set -DnewVersion=${versionSuffix}-SNAPSHOT"
+                        bat "mvn versions:update-child-modules"
+                        bat "mvn clean package"
                     }
                 }
             }
