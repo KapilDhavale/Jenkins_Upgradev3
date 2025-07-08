@@ -2,11 +2,11 @@ pipeline {
     agent any
 
     tools {
-        maven 'Maven_3.9.6'  // must match your Global Tool Configuration
+        maven 'Maven_3.9.6'  // must match your Global Tool Configuration entry
     }
-
+    
     environment {
-        VERSION         = '2.1.0'
+        VERSION         = '0.1.0'
         RELEASE_VERSION = 'R.2'
     }
 
@@ -36,7 +36,6 @@ pipeline {
             steps {
                 echo "Building version: ${VERSION} with suffix: ${RELEASE_VERSION}"
                 dir('java-tomcat-sample') {
-                    // Run all three Maven commands in one batch script
                     bat '''
                         mvn versions:set -DnewVersion=${VERSION}-SNAPSHOT
                         mvn versions:update-child-modules
@@ -50,7 +49,6 @@ pipeline {
     post {
         success {
             echo 'Build succeeded — archiving WAR artifact'
-            // Now that package has run, target/*.war will exist
             archiveArtifacts artifacts: 'java-tomcat-sample/target/*.war', fingerprint: true
         }
         failure {
