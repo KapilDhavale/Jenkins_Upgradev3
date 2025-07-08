@@ -2,11 +2,11 @@ pipeline {
     agent any
 
     tools {
-        maven 'Maven_3.9.6'  // must match your Global Tool Configuration entry
+        maven 'Maven_3.9.6'   // must match the name in Global Tool Configuration
     }
-    
+
     environment {
-        VERSION         = '2.1.0'
+        VERSION         = '0.1.0'
         RELEASE_VERSION = 'R.2'
     }
 
@@ -16,7 +16,7 @@ pipeline {
                 bat '''
                     git --version
                     java -version
-                    mvn -version
+                    mvn --version
                 '''
             }
         }
