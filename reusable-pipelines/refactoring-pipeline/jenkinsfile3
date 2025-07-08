@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     tools {
-        maven 'Maven_3.9.6'   // Must match your Global Tool Configuration
+        maven 'Maven_3.9.6'
     }
     
     parameters {
@@ -18,7 +18,6 @@ pipeline {
         stage('Audit tools') {
             steps {
                 bat '''
-                    echo ==== Tool Versions ====
                     git --version
                     java -version
                     mvn --version
@@ -40,7 +39,6 @@ pipeline {
         stage('Build') {
             steps {
                 script {
-                    // Compute suffix: INT_VERSIONci:BUILD_NUMBER if RELEASE is false
                     def versionSuffix = params.RELEASE ?
                         "${env.RELEASE_VERSION}:${env.BUILD_NUMBER}" :
                         "${env.INT_VERSION}ci:${env.BUILD_NUMBER}"
@@ -59,12 +57,13 @@ pipeline {
         }
 
         stage('Publish') {
-            when {
-                expression { return params.RELEASE }
-            }
+            when { expression { params.RELEASE } }
             steps {
-                // Adjusted to point to the target folder where Maven outputs the WAR
-                archiveArtifacts artifacts: 'java-tomcat-sample/target/*.war', fingerprint: true
+                // 1) Debug listing
+                bat 'dir java-tomcat-sample\\target'
+
+                // 2) Archive whatever got produced (war or jar)
+                archiveArtifacts artifacts: 'java-tomcat-sample/target/*.{war,jar}', fingerprint: true
             }
         }
     }
