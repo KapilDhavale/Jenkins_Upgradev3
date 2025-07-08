@@ -9,18 +9,21 @@ pipeline {
         RELEASE_VERSION = '1.1.0'
         INT_VERSION = 'R2'
     }
+
     stages {
         stage('Audit tools') {
             steps {
-                auditTools()
+                script {
+                    auditTools()
+                }
             }
         }
 
         stage('Unit Test') {
             steps {
-                dir('./java-tomcat-sample') {
-                    sh '''
-                        echo "Executing Unit Tests..."
+                dir('java-tomcat-sample') {
+                    bat '''
+                        echo ==== Executing Unit Tests ====
                         mvn test
                     '''
                 }
@@ -28,25 +31,26 @@ pipeline {
         }
 
         stage('Build') {
-            environment {
-                VERSION_SUFFIX = getBuildVersion()
-            }
             steps {
-                echo "Building version: ${INT_VERSION} with suffix: ${VERSION_SUFFIX}"
-                echo 'Mention your Application Build Code here!!!'
-                dir('./java-tomcat-sample') {
-                    packageApplication()
+                script {
+                    def versionSuffix = getBuildVersion()
+                    echo "Building version: ${params.RELEASE ? RELEASE_VERSION : INT_VERSION} with suffix: ${versionSuffix}"
+                    
+                    dir('java-tomcat-sample') {
+                        packageApplication(versionSuffix)
+                    }
                 }
             }
         }
 
         stage('Publish') {
+            // Uncomment this block if you only want to publish during release
             // when {
             //     expression { return params.RELEASE }
             // }
-
             steps {
-                archiveArtifacts('**/*.war')
+                bat 'dir java-tomcat-sample\\target'
+                archiveArtifacts artifacts: 'java-tomcat-sample/target/*.war', fingerprint: true
             }
         }
     }
@@ -58,26 +62,22 @@ pipeline {
     }
 }
 
-String getBuildVersion() {
-    if (params.RELEASE) {
-        return env.RELEASE_VERSION + ':' + env.BUILD_NUMBER
-    } else {
-        return env.INT_VERSION + '+ci:' + env.BUILD_NUMBER
-    }
+def getBuildVersion() {
+    return params.RELEASE ? "${env.RELEASE_VERSION}:${env.BUILD_NUMBER}" : "${env.INT_VERSION}ci:${env.BUILD_NUMBER}"
 }
 
-void auditTools() {
-    sh '''
-        git version
+def auditTools() {
+    bat '''
+        git --version
         java -version
-        mvn -version
+        mvn --version
     '''
 }
 
-void packageApplication() {
-    sh '''
-        mvn versions:set -DnewVersion="${VERSION_SUFFIX}"-SNAPSHOT
+def packageApplication(versionSuffix) {
+    bat """
+        mvn versions:set -DnewVersion=${versionSuffix}-SNAPSHOT
         mvn versions:update-child-modules
         mvn clean package
-    '''
+    """
 }
