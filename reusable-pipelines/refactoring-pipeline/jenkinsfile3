@@ -2,9 +2,9 @@ pipeline {
     agent any
 
     tools {
-        maven 'Maven_3.9.6'
+        maven 'Maven_3.9.6' // Make sure this name matches in Jenkins tool config
     }
-    
+
     parameters {
         booleanParam(name: 'RELEASE', defaultValue: false, description: 'Is this a Release Candidate?')
     }
@@ -40,8 +40,8 @@ pipeline {
             steps {
                 script {
                     def versionSuffix = params.RELEASE ?
-                        "${env.RELEASE_VERSION}:${env.BUILD_NUMBER}" :
-                        "${env.INT_VERSION}ci:${env.BUILD_NUMBER}"
+                        "${env.RELEASE_VERSION}-${env.BUILD_NUMBER}" :
+                        "${env.INT_VERSION}ci-${env.BUILD_NUMBER}"
 
                     echo "Building version: ${versionSuffix}"
 
@@ -55,12 +55,14 @@ pipeline {
         }
 
         stage('Publish') {
-            when { expression { params.RELEASE } }
+            when {
+                expression { params.RELEASE }
+            }
             steps {
-                // List out the target folder so you can verify
+                // Optional: List files in the target directory to debug
                 bat 'dir java-tomcat-sample\\target'
 
-                // Now archive the WAR (or JAR) you just built
+                // Archive WAR file
                 archiveArtifacts artifacts: 'java-tomcat-sample/target/*.war', fingerprint: true
             }
         }
